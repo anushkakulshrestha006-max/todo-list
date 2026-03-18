@@ -1,0 +1,107 @@
+/* Remove default list styling */
+.task-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Task card */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+/* Hover effect */
+.task-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Custom checkbox */
+.task-item input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid #007bff;
+  cursor: pointer;
+  position: relative;
+  transition: 0.2s;
+}
+
+.task-item input[type="checkbox"]:checked {
+  background: #007bff;
+}
+
+.task-item input[type="checkbox"]:checked::after {
+  content: "✔";
+  color: white;
+  font-size: 12px;
+  position: absolute;
+  top: -2px;
+  left: 2px;
+}
+
+/* Task text */
+.task-item span {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Completed task */
+.task-item.completed {
+  background: #f1f3f5;
+}
+
+.task-item.completed span {
+  text-decoration: line-through;
+  color: #999;
+}
+
+/* Buttons container */
+.task-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Common button style */
+.edit-button,
+.delete-button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.25s ease;
+}
+
+/* Edit button */
+.edit-button {
+  background: linear-gradient(135deg, #28a745, #5cd67a);
+  color: white;
+}
+
+.edit-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+}
+
+/* Delete button */
+.delete-button {
+  background: linear-gradient(135deg, #dc3545, #ff6b6b);
+  color: white;
+}
+
+.delete-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+}
