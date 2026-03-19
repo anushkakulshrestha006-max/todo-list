@@ -12,14 +12,14 @@ function App() {
   const [taskToDelete, setTaskToDelete] = useState(null);
 
   useEffect(() => {
-    axios.get('http://localhost:5001/tasks')
+    axios.get('https://energetic-wisdom-production-dda6.up.railway.app/tasks')
       .then(response => setTasks(response.data))
       .catch(error => console.error(error));
   }, []);
 
   const addTask = (task) => {
     console.log(task);
-    axios.post('http://localhost:5001/tasks', task, {
+    axios.post('https://energetic-wisdom-production-dda6.up.railway.app/tasks', task, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -29,7 +29,7 @@ function App() {
   };
 
   const updateTask = (updatedTask) => {
-    axios.put(`http://localhost:5001/tasks/${updatedTask._id}`, updatedTask, {
+    axios.put(`https://energetic-wisdom-production-dda6.up.railway.app/tasks/${updatedTask._id}`, updatedTask, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -41,7 +41,7 @@ function App() {
   };
 
   const deleteTask = (taskId) => {
-    axios.delete(`http://localhost:5001/tasks/${taskId}`)
+    axios.delete(`https://energetic-wisdom-production-dda6.up.railway.app/tasks/${taskId}`)
       .then(() => {
         setTasks(tasks.filter(task => task._id !== taskId));
       })
