@@ -3,25 +3,23 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
-const app = express();
-app.use(bodyParser.json());
 const corsOptions = {
-    origin: "http://localhost:3000", // your frontend
+    origin: [
+        "http://localhost:3000",
+        "https://your-vercel-app.vercel.app"  // 👈 ADD THIS
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-
-// VERY IMPORTANT → handle preflight requests
 app.options("*", cors(corsOptions));
-
 /*const corsOptions = {
     origin: '*',
     methods: 'GET, POST, PUT, DELETE, OPTIONS',
     allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
 };*/
-app.use(cors());
+
 
 
 const uri = "mongodb+srv://anushkakulshrestha006_db_user:iQGrDCkKyEGX9FaB@xyz.aouxtsf.mongodb.net/?appName=xyz"
