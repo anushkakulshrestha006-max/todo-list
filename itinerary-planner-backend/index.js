@@ -38,11 +38,15 @@ app.get("/", (req, res) => {
 
 app.post('/tasks', async (req, res) => {
     try {
+        console.log("Incoming body:", req.body); // 👈 debug
+
         const task = new Task(req.body);
         await task.save();
+
         res.send(task);
     } catch (err) {
-        res.status(500).send(err);
+        console.error("POST ERROR:", err); // 👈 VERY IMPORTANT
+        res.status(500).send(err.message);
     }
 });
 
