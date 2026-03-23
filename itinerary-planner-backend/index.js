@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const corsOptions = {
     origin: [
         "http://localhost:3000",
-        "https://your-vercel-app.vercel.app"  // 👈 ADD THIS
+        "https://todo-list-three-blond-ccml2grnlo.vercel.app/"  // 👈 ADD THIS
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
