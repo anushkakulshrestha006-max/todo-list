@@ -1,22 +1,23 @@
-/* Global */
+/* ================= GLOBAL ================= */
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
   background: linear-gradient(135deg, #e3f2fd, #ffffff);
 }
 
-/* Main App Container */
+/* ================= MAIN APP ================= */
 .App {
-  max-width: 700px;
+  max-width: 750px;
   margin: 50px auto;
   padding: 30px;
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+  transition: 0.3s ease;
 }
 
-/* Header */
+/* ================= HEADER ================= */
 .App-header {
   display: flex;
   justify-content: space-between;
@@ -30,7 +31,7 @@ body {
   font-weight: 600;
 }
 
-/* Add Task Button */
+/* ================= BUTTONS ================= */
 .add-task-button {
   padding: 10px 20px;
   background: linear-gradient(135deg, #007bff, #00c6ff);
@@ -43,16 +44,16 @@ body {
 }
 
 .add-task-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 123, 255, 0.3);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
 }
 
-/* Task List Container */
+/* ================= TASK LIST ================= */
 .task-list {
   margin-top: 20px;
 }
 
-/* Each Task Card */
+/* ================= TASK CARD ================= */
 .task {
   display: flex;
   justify-content: space-between;
@@ -60,12 +61,15 @@ body {
   background: #f8f9fa;
   padding: 15px;
   margin-bottom: 12px;
-  border-radius: 12px;
-  transition: 0.3s ease;
+  border-radius: 14px;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .task:hover {
-  background: #e9ecef;
+  transform: translateY(-3px);
+  background: #eef3ff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 /* Completed Task */
@@ -75,12 +79,12 @@ body {
   background: #e0e0e0;
 }
 
-/* Task Text */
+/* ================= TASK TEXT ================= */
 .task span {
   font-size: 15px;
 }
 
-/* Buttons inside task */
+/* ================= TASK BUTTONS ================= */
 .task-buttons {
   display: flex;
   gap: 8px;
@@ -89,13 +93,13 @@ body {
 .task button {
   padding: 6px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
   transition: 0.2s;
 }
 
-/* Edit Button */
+/* Edit */
 .edit-btn {
   background: #ffc107;
   color: black;
@@ -103,9 +107,10 @@ body {
 
 .edit-btn:hover {
   background: #e0a800;
+  transform: scale(1.05);
 }
 
-/* Delete Button */
+/* Delete */
 .delete-btn {
   background: #ff4d4d;
   color: white;
@@ -113,9 +118,10 @@ body {
 
 .delete-btn:hover {
   background: #cc0000;
+  transform: scale(1.05);
 }
 
-/* Complete Button */
+/* Complete */
 .complete-btn {
   background: #28a745;
   color: white;
@@ -123,16 +129,17 @@ body {
 
 .complete-btn:hover {
   background: #1e7e34;
+  transform: scale(1.05);
 }
 
-/* Modal Overlay (for TaskModal) */
+/* ================= MODAL ================= */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -142,10 +149,23 @@ body {
 .modal {
   background: white;
   padding: 25px;
-  border-radius: 12px;
-  width: 300px;
+  border-radius: 14px;
+  width: 320px;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.3s ease;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Modal Input */
@@ -172,7 +192,7 @@ body {
   cursor: pointer;
 }
 
-/* Save Button */
+/* Save */
 .save-btn {
   background: #007bff;
   color: white;
@@ -182,7 +202,7 @@ body {
   background: #0056b3;
 }
 
-/* Cancel Button */
+/* Cancel */
 .cancel-btn {
   background: #6c757d;
   color: white;
@@ -190,4 +210,76 @@ body {
 
 .cancel-btn:hover {
   background: #545b62;
+}
+
+/* ================= AUTH UI ================= */
+.auth-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+/* Glass Card */
+.auth-box {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px);
+  padding: 40px;
+  border-radius: 18px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  color: white;
+}
+
+/* Heading */
+.auth-box h2 {
+  margin-bottom: 20px;
+}
+
+/* Inputs */
+.auth-box input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.25);
+  color: white;
+}
+
+.auth-box input::placeholder {
+  color: #eee;
+}
+
+/* Button */
+.auth-box button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #00c6ff, #007bff);
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.auth-box button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Toggle text */
+.auth-toggle {
+  margin-top: 15px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #e0e0e0;
+}
+
+.auth-toggle:hover {
+  text-decoration: underline;
 }
