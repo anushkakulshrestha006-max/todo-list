@@ -16,7 +16,6 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [showRegister, setShowRegister] = useState(false);
 
-  // ✅ ALWAYS get fresh token
   const getAuthHeaders = () => ({
     headers: {
       Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -24,56 +23,63 @@ function App() {
     }
   });
 
-  // =========================
-  // ✅ Fetch tasks
-  // =========================
+  // ================= FETCH TASKS =================
   useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await axios.get('http://localhost:5001/tasks', getAuthHeaders());
+        setTasks(res.data);
+      } catch (err) {
+        console.error("Error fetching tasks:", err.response || err);
+      }
+    };
+
     if (isAuthenticated) {
-      axios.get('http://localhost:5001/tasks', getAuthHeaders())
-        .then(res => setTasks(res.data))
-        .catch(err => console.error("Error fetching tasks:", err.response || err));
+      fetchTasks();
     }
   }, [isAuthenticated]);
 
-  // =========================
-  // ✅ Add Task
-  // =========================
-  const addTask = (task) => {
-    axios.post('http://localhost:5001/tasks', task, getAuthHeaders())
-      .then(res => setTasks([...tasks, res.data]))
-      .catch(err => console.error("Error adding task:", err.response || err));
+  // ================= ADD TASK =================
+  const addTask = async (task) => {
+    try {
+      const res = await axios.post('http://localhost:5001/tasks', task, getAuthHeaders());
+      setTasks(prev => [...prev, res.data]);
+    } catch (err) {
+      console.error("Error adding task:", err.response || err);
+      throw err;
+    }
   };
 
-  // =========================
-  // ✅ Update Task
-  // =========================
-  const updateTask = (task) => {
-    axios.put(`http://localhost:5001/tasks/${task._id}`, task, getAuthHeaders())
-      .then(res => setTasks(tasks.map(t => t._id === task._id ? res.data : t)))
-      .catch(err => console.error("Error updating task:", err.response || err));
+  // ================= UPDATE TASK =================
+  const updateTask = async (task) => {
+    try {
+      const res = await axios.put(`http://localhost:5001/tasks/${task._id}`, task, getAuthHeaders());
+      setTasks(prev => prev.map(t => t._id === task._id ? res.data : t));
+    } catch (err) {
+      console.error("Error updating task:", err.response || err);
+      throw err;
+    }
   };
 
-  // =========================
-  // ✅ Delete Task
-  // =========================
-  const deleteTask = (taskId) => {
-    axios.delete(`http://localhost:5001/tasks/${taskId}`, getAuthHeaders())
-      .then(() => setTasks(tasks.filter(t => t._id !== taskId)))
-      .catch(err => console.error("Error deleting task:", err.response || err));
+  // ================= DELETE TASK =================
+  const deleteTask = async (taskId) => {
+    try {
+      await axios.delete(`http://localhost:5001/tasks/${taskId}`, getAuthHeaders());
+      setTasks(prev => prev.filter(t => t._id !== taskId));
+    } catch (err) {
+      console.error("Error deleting task:", err.response || err);
+      throw err;
+    }
   };
 
-  // =========================
-  // ✅ Toggle Complete
-  // =========================
+  // ================= TOGGLE =================
   const toggleTaskCompletion = (taskId) => {
     const task = tasks.find(t => t._id === taskId);
     if (!task) return;
     updateTask({ ...task, completed: !task.completed });
   };
 
-  // =========================
-  // ✅ Logout
-  // =========================
+  // ================= LOGOUT =================
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
@@ -81,47 +87,56 @@ function App() {
     setTasks([]);
   };
 
-  // =========================
-  // ✅ AUTH FLOW
-  // =========================
+  // ================= AUTH FLOW =================
   if (!isAuthenticated) {
     return showRegister
       ? <Register onRegister={() => setShowRegister(false)} goToLogin={() => setShowRegister(false)} />
       : <Login onLogin={() => setIsAuthenticated(true)} goToRegister={() => setShowRegister(true)} />;
   }
 
+  // ================= MAIN UI =================
   return (
     <div className="App">
+
       <header className="App-header">
-        <h1>Itinerary Planner</h1>
-        <p>Welcome, {localStorage.getItem('username')}!</p>
+        <div className="header-left">
+          <h1>Itinerary Planner</h1>
+          <p className="welcome-text">
+            Welcome, {localStorage.getItem('username')} 👋
+          </p>
+        </div>
 
-        <button onClick={handleLogout}>Logout</button>
+        <div className="header-right">
+          <button
+            className="add-task-button"
+            onClick={() => {
+              setCurrentTask(null);
+              setIsModalOpen(true);
+            }}
+          >
+            + Add Task
+          </button>
 
-        <button
-          className="add-task-button"
-          onClick={() => {
-            setCurrentTask(null);
-            setIsModalOpen(true);
-          }}
-        >
-          Add Task
-        </button>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </header>
 
       <TaskList
         tasks={tasks}
-        onEdit={task => {
+        onEdit={(task) => {
           setCurrentTask(task);
           setIsModalOpen(true);
         }}
-        onDelete={taskId => {
+        onDelete={(taskId) => {
           setTaskToDelete(taskId);
           setIsDeleteModalOpen(true);
         }}
         onToggleComplete={toggleTaskCompletion}
       />
 
+      {/* Add / Edit Modal */}
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -129,16 +144,18 @@ function App() {
         task={currentTask}
       />
 
-      {/* Delete confirmation */}
+      {/* Delete Modal */}
       <TaskModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onDelete={() => {
-          deleteTask(taskToDelete);
+        onDelete={async () => {
+          await deleteTask(taskToDelete);
           setIsDeleteModalOpen(false);
         }}
+        task={{ _id: taskToDelete }}
         isDeleteMode={true}
       />
+
     </div>
   );
 }

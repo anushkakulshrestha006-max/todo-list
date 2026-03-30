@@ -6,8 +6,8 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
-// ✅ Use secret from .env
-const SECRET = process.env.JWT_SECRET || "fallback_secret_key";
+// ✅ Always use .env secret (NO fallback in production)
+const SECRET = process.env.JWT_SECRET;
 
 // =========================
 // 1️⃣ User Schema
@@ -25,7 +25,7 @@ const User = mongoose.models.User || mongoose.model('User', UserSchema);
 // =========================
 router.post('/register', async (req, res) => {
     try {
-        console.log("Register request body:", req.body); // ✅ DEBUG
+        console.log("Register request:", req.body);
 
         const { username, email, password } = req.body;
 
@@ -33,6 +33,7 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
+        // Check existing user
         const existingUser = await User.findOne({
             $or: [{ email }, { username }]
         });
@@ -41,8 +42,10 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: "User already exists" });
         }
 
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Create user
         const newUser = new User({
             username,
             email,
@@ -56,8 +59,8 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Register error:", err.message || err);
-        res.status(500).json({ message: "Server error" });
+        console.error("Register error:", err);
+        res.status(500).json({ message: err.message }); // 🔥 real error
     }
 });
 
@@ -66,7 +69,7 @@ router.post('/register', async (req, res) => {
 // =========================
 router.post('/login', async (req, res) => {
     try {
-        console.log("Login request body:", req.body); // ✅ DEBUG
+        console.log("Login request:", req.body);
 
         const { email, password } = req.body;
 
@@ -92,9 +95,10 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        // ✅ Token payload (IMPORTANT)
         const token = jwt.sign(
             {
-                id: user._id,
+                id: user._id,            // 👈 this is what backend uses
                 username: user.username,
                 email: user.email
             },
@@ -106,14 +110,14 @@ router.post('/login', async (req, res) => {
             token,
             user: {
                 id: user._id,
-                name: user.username,
+                username: user.username,
                 email: user.email
             }
         });
 
     } catch (err) {
-        console.error("Login error:", err.message || err);
-        res.status(500).json({ message: "Server error" });
+        console.error("Login error:", err);
+        res.status(500).json({ message: err.message });
     }
 });
 
@@ -128,21 +132,25 @@ const authMiddleware = (req, res, next) => {
             return res.status(401).json({ message: "No token provided" });
         }
 
-        const token = authHeader.split(" ")[1];
+        const parts = authHeader.split(" ");
 
-        if (!token) {
+        if (parts.length !== 2 || parts[0] !== "Bearer") {
             return res.status(401).json({ message: "Invalid token format" });
         }
 
+        const token = parts[1];
+
         const decoded = jwt.verify(token, SECRET);
 
-        req.user = decoded;
+        console.log("Decoded token:", decoded); // 🔍 DEBUG
+
+        req.user = decoded; // ✅ VERY IMPORTANT
 
         next();
 
     } catch (err) {
-        console.error("Auth middleware error:", err.message || err);
-        res.status(401).json({ message: "Invalid or expired token" });
+        console.error("Auth error:", err);
+        res.status(401).json({ message: err.message });
     }
 };
 
