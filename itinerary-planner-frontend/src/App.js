@@ -99,6 +99,7 @@ function App() {
     <div className="App">
 
       <header className="App-header">
+
         <div className="header-left">
           <h1>Itinerary Planner</h1>
           <p className="welcome-text">
@@ -117,10 +118,13 @@ function App() {
             + Add Task
           </button>
 
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
+          <div className="logout-wrapper">
+            <button className="logout-btn" onClick={handleLogout}>
+              ⎋ Logout
+            </button>
+          </div>
         </div>
+
       </header>
 
       <TaskList
