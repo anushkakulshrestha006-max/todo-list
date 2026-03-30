@@ -5,39 +5,43 @@ import './TaskModal.css';
 Modal.setAppElement('#root');
 
 function TaskModal({ isOpen, onClose, onSave, onDelete, task, isDeleteMode }) {
-    const [text, setText] = useState('');
-    const [error, setError] = useState(null); // State for error message
+    const [title, setTitle] = useState('');
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (task) {
-            setText(task.text);
+            setTitle(task.title); // ✅ FIXED
         } else {
-            setText('');
+            setTitle('');
         }
     }, [task]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
         if (isDeleteMode) {
             onDelete(task._id);
             onClose();
             return;
         }
 
-        // Validation: Check if text is empty
-        if (text.trim() === '') {
+        if (title.trim() === '') {
             setError('Task cannot be empty');
             return;
         }
 
-        const taskToSave = task ? { ...task, text } : { text, completed: false };
+        // ✅ FIXED: send title instead of text
+        const taskToSave = task
+            ? { ...task, title }
+            : { title, completed: false };
+
         onSave(taskToSave);
         onClose();
     };
 
-    const handleTextChange = (e) => {
-        setText(e.target.value);
-        setError(null); // Clear error when user starts typing again
+    const handleTitleChange = (e) => {
+        setTitle(e.target.value);
+        setError(null);
     };
 
     return (
@@ -57,12 +61,14 @@ function TaskModal({ isOpen, onClose, onSave, onDelete, task, isDeleteMode }) {
                             Task:
                             <input
                                 type="text"
-                                value={text}
-                                onChange={handleTextChange}
+                                value={title}
+                                onChange={handleTitleChange}
                                 required
                             />
                         </label>
-                        {error && <p className="error-message">{error}</p>} {/* Display error message */}
+
+                        {error && <p className="error-message">{error}</p>}
+
                         <div className="modal-buttons">
                             <button className="save-button" type="submit">Save</button>
                             <button className="cancel-button" type="button" onClick={onClose}>Cancel</button>

@@ -5,10 +5,12 @@ function Login({ onLogin, goToRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const res = await axios.post("http://localhost:5001/auth/login", {
@@ -16,18 +18,29 @@ function Login({ onLogin, goToRegister }) {
         password,
       });
 
-      // ✅ Save token + username
+      // ✅ Save token + user info safely
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("username", res.data.username);
+      localStorage.setItem(
+        "username",
+        res.data.user?.name || res.data.user?.username || "User"
+      );
 
       alert("Login successful ✅");
 
-      // ✅ Switch to main app
       if (onLogin) onLogin();
 
-    } catch (error) {
-      console.error(error.response || error);
-      setError(error.response?.data?.message || "Login failed ❌");
+    } catch (err) {
+      console.error("Login Error:", err.response || err);
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Login failed ❌");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,13 +66,13 @@ function Login({ onLogin, goToRegister }) {
             required
           />
 
-          <button type="submit">Login</button>
+          <button type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
         </form>
 
-        {/* ✅ Error message */}
         {error && <p className="auth-error">{error}</p>}
 
-        {/* ✅ Switch to Register WITHOUT page reload */}
         <p className="auth-toggle" onClick={goToRegister}>
           Don't have an account? Register
         </p>

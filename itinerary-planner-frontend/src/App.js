@@ -16,70 +16,78 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [showRegister, setShowRegister] = useState(false);
 
-  const token = localStorage.getItem('token');
+  // ✅ ALWAYS get fresh token
+  const getAuthHeaders = () => ({
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'application/json'
+    }
+  });
 
-  // Fetch tasks
+  // =========================
+  // ✅ Fetch tasks
+  // =========================
   useEffect(() => {
     if (isAuthenticated) {
-      axios.get('http://localhost:5001/tasks', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(response => setTasks(response.data))
-        .catch(error => console.error(error));
+      axios.get('http://localhost:5001/tasks', getAuthHeaders())
+        .then(res => setTasks(res.data))
+        .catch(err => console.error("Error fetching tasks:", err.response || err));
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated]);
 
+  // =========================
+  // ✅ Add Task
+  // =========================
   const addTask = (task) => {
-    axios.post('http://localhost:5001/tasks', task, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-    })
-      .then(response => setTasks([...tasks, response.data]))
-      .catch(error => console.error(error));
+    axios.post('http://localhost:5001/tasks', task, getAuthHeaders())
+      .then(res => setTasks([...tasks, res.data]))
+      .catch(err => console.error("Error adding task:", err.response || err));
   };
 
-  const updateTask = (updatedTask) => {
-    axios.put(`http://localhost:5001/tasks/${updatedTask._id}`, updatedTask, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-    })
-      .then(response => setTasks(tasks.map(task => task._id === updatedTask._id ? response.data : task)))
-      .catch(error => console.error(error));
+  // =========================
+  // ✅ Update Task
+  // =========================
+  const updateTask = (task) => {
+    axios.put(`http://localhost:5001/tasks/${task._id}`, task, getAuthHeaders())
+      .then(res => setTasks(tasks.map(t => t._id === task._id ? res.data : t)))
+      .catch(err => console.error("Error updating task:", err.response || err));
   };
 
+  // =========================
+  // ✅ Delete Task
+  // =========================
   const deleteTask = (taskId) => {
-    axios.delete(`http://localhost:5001/tasks/${taskId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(() => setTasks(tasks.filter(task => task._id !== taskId)))
-      .catch(error => console.error(error));
+    axios.delete(`http://localhost:5001/tasks/${taskId}`, getAuthHeaders())
+      .then(() => setTasks(tasks.filter(t => t._id !== taskId)))
+      .catch(err => console.error("Error deleting task:", err.response || err));
   };
 
+  // =========================
+  // ✅ Toggle Complete
+  // =========================
   const toggleTaskCompletion = (taskId) => {
-    const task = tasks.find(task => task._id === taskId);
-    task.completed = !task.completed;
-    updateTask(task);
+    const task = tasks.find(t => t._id === taskId);
+    if (!task) return;
+    updateTask({ ...task, completed: !task.completed });
   };
 
+  // =========================
+  // ✅ Logout
+  // =========================
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     setIsAuthenticated(false);
+    setTasks([]);
   };
 
-  // 🔥 AUTH FLOW FIXED HERE
+  // =========================
+  // ✅ AUTH FLOW
+  // =========================
   if (!isAuthenticated) {
     return showRegister
-      ? (
-        <Register
-          onRegister={() => setShowRegister(false)}
-          goToLogin={() => setShowRegister(false)}
-        />
-      )
-      : (
-        <Login
-          onLogin={() => setIsAuthenticated(true)}
-          goToRegister={() => setShowRegister(true)}
-        />
-      );
+      ? <Register onRegister={() => setShowRegister(false)} goToLogin={() => setShowRegister(false)} />
+      : <Login onLogin={() => setIsAuthenticated(true)} goToRegister={() => setShowRegister(true)} />;
   }
 
   return (
@@ -87,10 +95,15 @@ function App() {
       <header className="App-header">
         <h1>Itinerary Planner</h1>
         <p>Welcome, {localStorage.getItem('username')}!</p>
+
         <button onClick={handleLogout}>Logout</button>
+
         <button
           className="add-task-button"
-          onClick={() => { setCurrentTask(null); setIsModalOpen(true); }}
+          onClick={() => {
+            setCurrentTask(null);
+            setIsModalOpen(true);
+          }}
         >
           Add Task
         </button>
@@ -98,8 +111,14 @@ function App() {
 
       <TaskList
         tasks={tasks}
-        onEdit={task => { setCurrentTask(task); setIsModalOpen(true); }}
-        onDelete={task => { setTaskToDelete(task); setIsDeleteModalOpen(true); }}
+        onEdit={task => {
+          setCurrentTask(task);
+          setIsModalOpen(true);
+        }}
+        onDelete={taskId => {
+          setTaskToDelete(taskId);
+          setIsDeleteModalOpen(true);
+        }}
         onToggleComplete={toggleTaskCompletion}
       />
 
@@ -110,11 +129,14 @@ function App() {
         task={currentTask}
       />
 
+      {/* Delete confirmation */}
       <TaskModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onDelete={deleteTask}
-        task={taskToDelete}
+        onDelete={() => {
+          deleteTask(taskToDelete);
+          setIsDeleteModalOpen(false);
+        }}
         isDeleteMode={true}
       />
     </div>

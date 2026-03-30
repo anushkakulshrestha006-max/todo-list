@@ -1,127 +1,126 @@
 require('dotenv').config();
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+
+const { router: userRouter, authMiddleware } = require('./user');
 
 const app = express();
 
+// =========================
+// ✅ Middleware
+// =========================
+app.use(cors());
 app.use(express.json());
 
-app.use(cors({
-  origin: ["http://localhost:3000"],
-}));
-
-// ✅ MongoDB
+// =========================
+// ✅ Connect to MongoDB
+// =========================
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
-// ================= MODELS =================
-const User = mongoose.model('User', new mongoose.Schema({
-  username: String,
-  email: { type: String, unique: true },
-  password: String
-}));
+// =========================
+// ✅ User Routes
+// =========================
+app.use('/auth', userRouter);
 
-const Task = mongoose.model('Task', new mongoose.Schema({
-  text: String,
-  completed: Boolean
-}));
+// =========================
+// ✅ Task Model (ONLY ONE MODEL)
+// =========================
+const TaskSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    completed: { type: Boolean, default: false },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
 
-// ================= AUTH =================
+const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
 
-// REGISTER
-app.post('/auth/register', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      username,
-      email,
-      password: hashed
-    });
-
-    await user.save();
-
-    res.json({ message: "Registered successfully" });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Error registering user" });
-  }
-});
-
-// LOGIN
-app.post('/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(400).json({ message: "Wrong password" });
-    }
-
-    // ✅ HERE is jwt.sign (you were asking about this)
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({
-      token,
-      username: user.username
-    });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Error logging in" });
-  }
-});
-
-// ================= MIDDLEWARE =================
-const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-
-  if (!token) return res.status(401).json({ message: "No token" });
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
-
-// ================= TASKS =================
-app.get('/tasks', authMiddleware, async (req, res) => {
-  const tasks = await Task.find();
-  res.json(tasks);
-});
-
+// =========================
+// ✅ TASK ROUTES
+// =========================
 app.post('/tasks', authMiddleware, async (req, res) => {
-  const task = new Task(req.body);
-  await task.save();
-  res.json(task);
+    try {
+        console.log("Creating task:", req.body); // ✅ DEBUG
+
+        if (!req.body.title) {
+            return res.status(400).json({ message: "Title is required" });
+        }
+
+        const task = new Task({
+            title: req.body.title,
+            userId: req.user.id
+        });
+
+        await task.save();
+        res.status(201).json(task);
+
+    } catch (err) {
+        console.error("Create Task error:", err);
+        res.status(500).json({ message: "Error creating task" });
+    }
 });
 
-// ================= SERVER =================
-app.listen(process.env.PORT || 5001, () => {
-  console.log("Server running");
+app.get('/tasks', authMiddleware, async (req, res) => {
+    try {
+        console.log("Fetching tasks for:", req.user.id); // ✅ DEBUG
+
+        const tasks = await Task.find({ userId: req.user.id });
+        res.json(tasks);
+
+    } catch (err) {
+        console.error("Get Tasks error:", err);
+        res.status(500).json({ message: "Error fetching tasks" });
+    }
+});
+
+app.put('/tasks/:id', authMiddleware, async (req, res) => {
+    try {
+        const updatedTask = await Task.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user.id },
+            {
+                title: req.body.title,
+                completed: req.body.completed
+            },
+            { new: true }
+        );
+
+        if (!updatedTask) {
+            return res.status(403).json({ message: "Not allowed" });
+        }
+
+        res.json(updatedTask);
+
+    } catch (err) {
+        console.error("Update Task error:", err);
+        res.status(500).json({ message: "Error updating task" });
+    }
+});
+
+app.delete('/tasks/:id', authMiddleware, async (req, res) => {
+    try {
+        const deletedTask = await Task.findOneAndDelete({
+            _id: req.params.id,
+            userId: req.user.id
+        });
+
+        if (!deletedTask) {
+            return res.status(403).json({ message: "Not allowed" });
+        }
+
+        res.json({ message: "Task deleted" });
+
+    } catch (err) {
+        console.error("Delete Task error:", err);
+        res.status(500).json({ message: "Error deleting task" });
+    }
+});
+
+// =========================
+// ✅ Start Server
+// =========================
+const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
