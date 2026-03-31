@@ -3,6 +3,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const router = express.Router();
 const SECRET = process.env.JWT_SECRET;
@@ -13,13 +15,26 @@ const SECRET = process.env.JWT_SECRET;
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  resetToken:       { type: String },
+  resetTokenExpiry: { type: Date },
 }, { timestamps: true });
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 
 // =========================
-// 2️⃣ REGISTER
+// 2️⃣ Nodemailer Setup
+// =========================
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER, // your Gmail
+    pass: process.env.EMAIL_PASS, // Gmail App Password
+  },
+});
+
+// =========================
+// 3️⃣ REGISTER
 // =========================
 router.post('/register', async (req, res) => {
   try {
@@ -43,7 +58,7 @@ router.post('/register', async (req, res) => {
 });
 
 // =========================
-// 3️⃣ LOGIN
+// 4️⃣ LOGIN
 // =========================
 router.post('/login', async (req, res) => {
   try {
@@ -73,7 +88,82 @@ router.post('/login', async (req, res) => {
 });
 
 // =========================
-// 4️⃣ Auth Middleware
+// 5️⃣ FORGOT PASSWORD
+// =========================
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    // Always return success to prevent email enumeration
+    if (!user)
+      return res.json({ message: "If this email exists, a reset link has been sent." });
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = Date.now() + 1000 * 60 * 60; // 1 hour
+    await user.save();
+
+    // ✅ Reset link points to your Vercel frontend
+    const resetLink = `https://todo-list-three-blond-ccml2grnlo.vercel.app/reset-password?token=${resetToken}`;
+
+    await transporter.sendMail({
+      from: `"Todo App" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "Password Reset Request",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:30px;border-radius:12px;background:#f8fbff;">
+          <h2 style="color:#4facfe;">Reset Your Password</h2>
+          <p>Hi <strong>${user.username}</strong>,</p>
+          <p>Click the button below to reset your password. This link expires in <strong>1 hour</strong>.</p>
+          <a href="${resetLink}"
+            style="display:inline-block;margin-top:20px;padding:12px 24px;background:linear-gradient(135deg,#4facfe,#00f2fe);color:white;border-radius:25px;text-decoration:none;font-weight:600;">
+            Reset Password
+          </a>
+          <p style="margin-top:20px;font-size:12px;color:#aaa;">If you didn't request this, ignore this email.</p>
+        </div>
+      `,
+    });
+
+    res.json({ message: "If this email exists, a reset link has been sent." });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// =========================
+// 6️⃣ RESET PASSWORD
+// =========================
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword)
+      return res.status(400).json({ message: "Token and new password required" });
+
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() }, // not expired
+    });
+
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+
+    res.json({ message: "Password reset successful ✅ You can now login." });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// =========================
+// 7️⃣ Auth Middleware
 // =========================
 const authMiddleware = (req, res, next) => {
   try {
@@ -95,6 +185,6 @@ const authMiddleware = (req, res, next) => {
 };
 
 // =========================
-// 5️⃣ Export
+// 8️⃣ Export
 // =========================
 module.exports = { router, authMiddleware, User };
