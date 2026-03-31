@@ -7,18 +7,26 @@ function Login({ onLogin, goToRegister }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ✅ Railway backend URL
+  const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5001/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        `${BASE_URL}/auth/login`,
+        { email, password },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-      // ✅ Save token + user info safely
+      // ✅ Save token + username
       localStorage.setItem("token", res.data.token);
       localStorage.setItem(
         "username",

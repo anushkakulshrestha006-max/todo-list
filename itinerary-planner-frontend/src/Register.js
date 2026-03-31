@@ -6,49 +6,59 @@ function Register({ onRegister, goToLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  // ✅ Railway backend URL
+  const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5001/auth/register", {
-        username: name,
-        email,
-        password,
-      });
+      const res = await axios.post(
+        `${BASE_URL}/auth/register`,
+        {
+          username: name,
+          email,
+          password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-      alert(res.data.message || "Registration successful 🎉");
+      // ✅ Save token + username safely
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem(
+        "username",
+        res.data.user?.name || res.data.user?.username || name
+      );
 
-      // ✅ Switch back to login after register
+      // Redirect to login or app
       if (onRegister) onRegister();
 
     } catch (err) {
-      console.error(err.response || err);
+      console.error("Register Error:", err.response || err);
 
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response?.data?.message) {
         setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
       } else {
-        setError("Registration failed ❌");
+        setError("Registration failed. Please try again.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-box">
-        <h2>Create Account ✨</h2>
+        <h2>Create Account</h2>
 
         <form onSubmit={handleRegister}>
           <input
             type="text"
-            placeholder="Enter Username"
+            placeholder="Username"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -56,7 +66,7 @@ function Register({ onRegister, goToLogin }) {
 
           <input
             type="email"
-            placeholder="Enter Email"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -64,21 +74,17 @@ function Register({ onRegister, goToLogin }) {
 
           <input
             type="password"
-            placeholder="Enter Password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Registering..." : "Register"}
-          </button>
+          <button type="submit">Register</button>
         </form>
 
-        {/* ✅ Error message UI */}
-        {error && <p className="auth-error">{error}</p>}
+        {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
 
-        {/* ✅ Switch without reload */}
         <p className="auth-toggle" onClick={goToLogin}>
           Already have an account? Login
         </p>

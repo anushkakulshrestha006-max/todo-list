@@ -6,13 +6,14 @@ import Login from './Login';
 import Register from './Register';
 import './App.css';
 
+const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
+
 function App() {
   const [tasks, setTasks] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
-
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [showRegister, setShowRegister] = useState(false);
 
@@ -27,22 +28,20 @@ function App() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/tasks', getAuthHeaders());
+        const res = await axios.get(`${BASE_URL}/tasks`, getAuthHeaders());
         setTasks(res.data);
       } catch (err) {
         console.error("Error fetching tasks:", err.response || err);
       }
     };
 
-    if (isAuthenticated) {
-      fetchTasks();
-    }
+    if (isAuthenticated) fetchTasks();
   }, [isAuthenticated]);
 
   // ================= ADD TASK =================
   const addTask = async (task) => {
     try {
-      const res = await axios.post('http://localhost:5001/tasks', task, getAuthHeaders());
+      const res = await axios.post(`${BASE_URL}/tasks`, task, getAuthHeaders());
       setTasks(prev => [...prev, res.data]);
     } catch (err) {
       console.error("Error adding task:", err.response || err);
@@ -53,7 +52,7 @@ function App() {
   // ================= UPDATE TASK =================
   const updateTask = async (task) => {
     try {
-      const res = await axios.put(`http://localhost:5001/tasks/${task._id}`, task, getAuthHeaders());
+      const res = await axios.put(`${BASE_URL}/tasks/${task._id}`, task, getAuthHeaders());
       setTasks(prev => prev.map(t => t._id === task._id ? res.data : t));
     } catch (err) {
       console.error("Error updating task:", err.response || err);
@@ -64,7 +63,7 @@ function App() {
   // ================= DELETE TASK =================
   const deleteTask = async (taskId) => {
     try {
-      await axios.delete(`http://localhost:5001/tasks/${taskId}`, getAuthHeaders());
+      await axios.delete(`${BASE_URL}/tasks/${taskId}`, getAuthHeaders());
       setTasks(prev => prev.filter(t => t._id !== taskId));
     } catch (err) {
       console.error("Error deleting task:", err.response || err);
@@ -99,7 +98,6 @@ function App() {
     <div className="App">
 
       <header className="App-header">
-
         <div className="header-left">
           <h1>Itinerary Planner</h1>
           <p className="welcome-text">
@@ -124,7 +122,6 @@ function App() {
             </button>
           </div>
         </div>
-
       </header>
 
       <TaskList
