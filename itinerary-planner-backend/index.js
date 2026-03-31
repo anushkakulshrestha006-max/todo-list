@@ -11,7 +11,8 @@ const app = express();
 // =========================
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173', // Vite default (just in case)
+  'http://localhost:5173',
+  'https://todo-list-three-blond-ccml2grnlo.vercel.app', // ✅ Vercel frontend
 ];
 
 app.use(cors({
