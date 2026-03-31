@@ -7,7 +7,6 @@ function Register({ onRegister, goToLogin }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // ✅ Railway backend URL
   const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
 
   const handleRegister = async (e) => {
@@ -17,31 +16,24 @@ function Register({ onRegister, goToLogin }) {
     try {
       const res = await axios.post(
         `${BASE_URL}/auth/register`,
-        {
-          username: name,
-          email,
-          password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
+        { username: name, email, password },
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      // ✅ Save token + username safely
       localStorage.setItem("token", res.data.token);
       localStorage.setItem(
         "username",
         res.data.user?.name || res.data.user?.username || name
       );
 
-      // Redirect to login or app
+      // ✅ Save credentials for auto-fill on next login
+      localStorage.setItem("saved_email", email);
+      localStorage.setItem("saved_password", password);
+
       if (onRegister) onRegister();
 
     } catch (err) {
       console.error("Register Error:", err.response || err);
-
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
@@ -63,7 +55,6 @@ function Register({ onRegister, goToLogin }) {
             onChange={(e) => setName(e.target.value)}
             required
           />
-
           <input
             type="email"
             placeholder="Email"
@@ -71,7 +62,6 @@ function Register({ onRegister, goToLogin }) {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-
           <input
             type="password"
             placeholder="Password"
@@ -79,7 +69,6 @@ function Register({ onRegister, goToLogin }) {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-
           <button type="submit">Register</button>
         </form>
 

@@ -4,6 +4,8 @@ import TaskList from './TaskList';
 import TaskModal from './TaskModal';
 import Login from './Login';
 import Register from './Register';
+import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
 import './App.css';
 
 const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
@@ -15,7 +17,15 @@ function App() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  const [showRegister, setShowRegister] = useState(false);
+  const [page, setPage] = useState('login'); // 'login' | 'register' | 'forgotPassword' | 'resetPassword'
+
+  // ✅ Check URL for reset-password token on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (window.location.pathname === '/reset-password' || params.get('token')) {
+      setPage('resetPassword');
+    }
+  }, []);
 
   const getAuthHeaders = () => ({
     headers: {
@@ -34,7 +44,6 @@ function App() {
         console.error("Error fetching tasks:", err.response || err);
       }
     };
-
     if (isAuthenticated) fetchTasks();
   }, [isAuthenticated]);
 
@@ -84,19 +93,37 @@ function App() {
     localStorage.removeItem('username');
     setIsAuthenticated(false);
     setTasks([]);
+    setPage('login');
   };
 
   // ================= AUTH FLOW =================
   if (!isAuthenticated) {
-    return showRegister
-      ? <Register onRegister={() => setShowRegister(false)} goToLogin={() => setShowRegister(false)} />
-      : <Login onLogin={() => setIsAuthenticated(true)} goToRegister={() => setShowRegister(true)} />;
+    if (page === 'resetPassword') {
+      return <ResetPassword goToLogin={() => setPage('login')} />;
+    }
+    if (page === 'forgotPassword') {
+      return <ForgotPassword goToLogin={() => setPage('login')} />;
+    }
+    if (page === 'register') {
+      return (
+        <Register
+          onRegister={() => setPage('login')}
+          goToLogin={() => setPage('login')}
+        />
+      );
+    }
+    return (
+      <Login
+        onLogin={() => setIsAuthenticated(true)}
+        goToRegister={() => setPage('register')}
+        goToForgotPassword={() => setPage('forgotPassword')}
+      />
+    );
   }
 
   // ================= MAIN UI =================
   return (
     <div className="App">
-
       <header className="App-header">
         <div className="header-left">
           <h1>Itinerary Planner</h1>
@@ -156,7 +183,6 @@ function App() {
         task={{ _id: taskToDelete }}
         isDeleteMode={true}
       />
-
     </div>
   );
 }
