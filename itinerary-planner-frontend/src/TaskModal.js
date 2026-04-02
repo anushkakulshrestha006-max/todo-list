@@ -5,102 +5,95 @@ import './TaskModal.css';
 Modal.setAppElement('#root');
 
 function TaskModal({ isOpen, onClose, onSave, onDelete, task, isDeleteMode }) {
-    const [title, setTitle] = useState('');
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false); // ✅ NEW
+  const [title, setTitle] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (task && task.title) {
-            setTitle(task.title);
-        } else {
-            setTitle('');
-        }
-    }, [task]);
+  useEffect(() => {
+    setTitle(task?.title || '');
+  }, [task]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
 
-        if (isDeleteMode) {
-            if (!task || !task._id) return; // ✅ SAFE GUARD
-            try {
-                setLoading(true);
-                await onDelete(task._id);
-                onClose();
-            } catch (err) {
-                setError("Failed to delete task");
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
+    try {
+      setLoading(true);
 
-        if (title.trim() === '') {
-            setError('Task cannot be empty');
-            return;
+      if (isDeleteMode) {
+        if (!task?._id) return;
+        await onDelete(task._id);
+      } else {
+        if (!title.trim()) {
+          setError('Task cannot be empty');
+          return;
         }
 
         const taskToSave = task
-            ? { ...task, title }
-            : { title, completed: false };
+          ? { ...task, title }
+          : { title, completed: false };
 
-        try {
-            setLoading(true);
-            await onSave(taskToSave); // ✅ wait for API
-            onClose();
-        } catch (err) {
-            setError("Failed to save task");
-        } finally {
-            setLoading(false);
-        }
-    };
+        await onSave(taskToSave);
+      }
 
-    const handleTitleChange = (e) => {
-        setTitle(e.target.value);
-        setError(null);
-    };
+      onClose();
 
-    return (
-        <Modal isOpen={isOpen} onRequestClose={onClose} className="modal" overlayClassName="overlay">
-            <form onSubmit={handleSubmit} className="task-form">
-                {isDeleteMode ? (
-                    <div>
-                        <p>Are you sure you want to delete this task?</p>
-                        <div className="modal-buttons">
-                            <button className="confirm-button" type="submit" disabled={loading}>
-                                {loading ? "Deleting..." : "Yes"}
-                            </button>
-                            <button className="cancel-button" type="button" onClick={onClose}>
-                                No
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div>
-                        <label>
-                            Task:
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={handleTitleChange}
-                                required
-                            />
-                        </label>
+    } catch (err) {
+      console.error(err);
+      setError(isDeleteMode ? "Failed to delete task" : "Failed to save task");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                        {error && <p className="error-message">{error}</p>}
+  return (
+    <Modal isOpen={isOpen} onRequestClose={onClose} className="modal" overlayClassName="overlay">
+      <form onSubmit={handleSubmit} className="task-form">
 
-                        <div className="modal-buttons">
-                            <button className="save-button" type="submit" disabled={loading}>
-                                {loading ? "Saving..." : "Save"}
-                            </button>
-                            <button className="cancel-button" type="button" onClick={onClose}>
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </form>
-        </Modal>
-    );
+        {isDeleteMode ? (
+          <>
+            <p>Are you sure you want to delete this task?</p>
+
+            <div className="modal-buttons">
+              <button type="submit" disabled={loading}>
+                {loading ? "Deleting..." : "Yes"}
+              </button>
+              <button type="button" onClick={onClose}>
+                No
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <label>
+              Task:
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError(null);
+                }}
+                required
+              />
+            </label>
+
+            {error && <p className="error-message">{error}</p>}
+
+            <div className="modal-buttons">
+              <button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save"}
+              </button>
+              <button type="button" onClick={onClose}>
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+
+      </form>
+    </Modal>
+  );
 }
 
 export default TaskModal;

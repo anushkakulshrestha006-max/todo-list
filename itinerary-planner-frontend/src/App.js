@@ -4,8 +4,8 @@ import TaskList from './TaskList';
 import TaskModal from './TaskModal';
 import Login from './Login';
 import Register from './Register';
-import ForgotPassword from './ForgotPassword';
-import ResetPassword from './ResetPassword';
+import ForgotPassword from './Forgotpassword';
+import ResetPassword from './Resetpassword';
 import './App.css';
 
 const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
@@ -17,9 +17,12 @@ function App() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  const [page, setPage] = useState('login'); // 'login' | 'register' | 'forgotPassword' | 'resetPassword'
+  const [page, setPage] = useState('login');
 
-  // ✅ Check URL for reset-password token on load
+  useEffect(() => {
+    document.title = "Itinerary Planner";
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (window.location.pathname === '/reset-password' || params.get('token')) {
@@ -27,33 +30,62 @@ function App() {
     }
   }, []);
 
-  const getAuthHeaders = () => ({
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
+  // ✅ SAFER TOKEN HANDLER
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      console.warn("No token found");
+      return null;
     }
-  });
+
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+  };
 
   // ================= FETCH TASKS =================
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/tasks`, getAuthHeaders());
+        const config = getAuthHeaders();
+        if (!config) return;
+
+        const res = await axios.get(`${BASE_URL}/tasks`, config);
         setTasks(res.data);
+
       } catch (err) {
         console.error("Error fetching tasks:", err.response || err);
+
+        // 🔥 AUTO LOGOUT ON 401
+        if (err.response?.status === 401) {
+          handleLogout();
+        }
       }
     };
+
     if (isAuthenticated) fetchTasks();
   }, [isAuthenticated]);
 
   // ================= ADD TASK =================
   const addTask = async (task) => {
     try {
-      const res = await axios.post(`${BASE_URL}/tasks`, task, getAuthHeaders());
+      const config = getAuthHeaders();
+      if (!config) return;
+
+      const res = await axios.post(`${BASE_URL}/tasks`, task, config);
       setTasks(prev => [...prev, res.data]);
+
     } catch (err) {
       console.error("Error adding task:", err.response || err);
+
+      if (err.response?.status === 401) {
+        handleLogout();
+      }
+
       throw err;
     }
   };
@@ -61,10 +93,19 @@ function App() {
   // ================= UPDATE TASK =================
   const updateTask = async (task) => {
     try {
-      const res = await axios.put(`${BASE_URL}/tasks/${task._id}`, task, getAuthHeaders());
+      const config = getAuthHeaders();
+      if (!config) return;
+
+      const res = await axios.put(`${BASE_URL}/tasks/${task._id}`, task, config);
       setTasks(prev => prev.map(t => t._id === task._id ? res.data : t));
+
     } catch (err) {
       console.error("Error updating task:", err.response || err);
+
+      if (err.response?.status === 401) {
+        handleLogout();
+      }
+
       throw err;
     }
   };
@@ -72,25 +113,32 @@ function App() {
   // ================= DELETE TASK =================
   const deleteTask = async (taskId) => {
     try {
-      await axios.delete(`${BASE_URL}/tasks/${taskId}`, getAuthHeaders());
+      const config = getAuthHeaders();
+      if (!config) return;
+
+      await axios.delete(`${BASE_URL}/tasks/${taskId}`, config);
       setTasks(prev => prev.filter(t => t._id !== taskId));
+
     } catch (err) {
       console.error("Error deleting task:", err.response || err);
+
+      if (err.response?.status === 401) {
+        handleLogout();
+      }
+
       throw err;
     }
   };
 
-  // ================= TOGGLE =================
   const toggleTaskCompletion = (taskId) => {
     const task = tasks.find(t => t._id === taskId);
     if (!task) return;
     updateTask({ ...task, completed: !task.completed });
   };
 
-  // ================= LOGOUT =================
+  // 🔥 CLEAN LOGOUT
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
+    localStorage.clear();
     setIsAuthenticated(false);
     setTasks([]);
     setPage('login');
@@ -121,7 +169,6 @@ function App() {
     );
   }
 
-  // ================= MAIN UI =================
   return (
     <div className="App">
       <header className="App-header">
@@ -143,11 +190,9 @@ function App() {
             + Add Task
           </button>
 
-          <div className="logout-wrapper">
-            <button className="logout-btn" onClick={handleLogout}>
-              ⎋ Logout
-            </button>
-          </div>
+          <button className="logout-btn" onClick={handleLogout}>
+            ⎋ Logout
+          </button>
         </div>
       </header>
 
@@ -164,7 +209,6 @@ function App() {
         onToggleComplete={toggleTaskCompletion}
       />
 
-      {/* Add / Edit Modal */}
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -172,14 +216,10 @@ function App() {
         task={currentTask}
       />
 
-      {/* Delete Modal */}
       <TaskModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onDelete={async () => {
-          await deleteTask(taskToDelete);
-          setIsDeleteModalOpen(false);
-        }}
+        onDelete={deleteTask}
         task={{ _id: taskToDelete }}
         isDeleteMode={true}
       />

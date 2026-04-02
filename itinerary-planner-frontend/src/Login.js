@@ -10,7 +10,6 @@ function Login({ onLogin, goToRegister, goToForgotPassword }) {
 
   const BASE_URL = "https://energetic-wisdom-production-dda6.up.railway.app";
 
-  // ✅ Auto-fill saved credentials on mount
   useEffect(() => {
     const savedEmail = localStorage.getItem("saved_email");
     const savedPassword = localStorage.getItem("saved_password");
@@ -36,23 +35,44 @@ function Login({ onLogin, goToRegister, goToForgotPassword }) {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      // ✅ Save token + username
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem(
-        "username",
-        res.data.user?.name || res.data.user?.username || "User"
-      );
+      console.log("FULL LOGIN RESPONSE:", res.data); // 🔍 DEBUG
 
-      // ✅ Save credentials for auto-fill next time
+      // ✅ SAFELY EXTRACT TOKEN
+      const token =
+        res.data.token ||
+        res.data.data?.token ||
+        res.data.accessToken;
+
+      if (!token) {
+        throw new Error("No token received from server");
+      }
+
+      // ✅ SAVE TOKEN
+      localStorage.setItem("token", token);
+
+      // ✅ SAVE USERNAME
+      const username =
+        res.data.user?.name ||
+        res.data.user?.username ||
+        res.data.data?.user?.name ||
+        "User";
+
+      localStorage.setItem("username", username);
+
+      // ⚠️ (Optional) REMOVE THIS FOR SECURITY
       localStorage.setItem("saved_email", email);
       localStorage.setItem("saved_password", password);
 
       alert("Login successful ✅");
+
       if (onLogin) onLogin();
 
     } catch (err) {
       console.error("Login Error:", err.response || err);
-      if (err.response?.data?.message) {
+
+      if (err.message === "No token received from server") {
+        setError("Server error: Token missing");
+      } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.message) {
         setError(err.message);
@@ -69,24 +89,20 @@ function Login({ onLogin, goToRegister, goToForgotPassword }) {
       <div className="auth-box">
         <h2>Welcome Back 👋</h2>
 
-        {/* ✅ Auto-fill banner */}
         {savedCredentials && (
-          <div
-            onClick={handleAutoFill}
-            style={{
-              background: "rgba(255,255,255,0.2)",
-              border: "1px solid rgba(255,255,255,0.4)",
-              borderRadius: "12px",
-              padding: "10px 14px",
-              marginBottom: "12px",
-              cursor: "pointer",
-              fontSize: "13px",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}
-          >
+          <div onClick={handleAutoFill} style={{
+            background: "rgba(255,255,255,0.2)",
+            border: "1px solid rgba(255,255,255,0.4)",
+            borderRadius: "12px",
+            padding: "10px 14px",
+            marginBottom: "12px",
+            cursor: "pointer",
+            fontSize: "13px",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}>
             <span>🔑</span>
             <span>
               Use saved account: <strong>{savedCredentials.email}</strong>
@@ -116,7 +132,6 @@ function Login({ onLogin, goToRegister, goToForgotPassword }) {
 
         {error && <p className="auth-error">{error}</p>}
 
-        {/* ✅ Forgot Password */}
         <p
           style={{
             marginTop: "10px",
